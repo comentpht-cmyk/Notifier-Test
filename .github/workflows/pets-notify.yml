@@ -1,0 +1,42 @@
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL para monitorar (ex.: sua página joiner)'
+        required: true
+        default: 'https://lennranda.github.io/lennranda-joiner/?placeId=109983668079237&gameInstanceId=e46a5204-0d74-4537-8435-1073abd724c4'
+      data_api_url:
+        description: 'URL de uma API que retorne JSON de pets (array). Se preenchido, será usado em vez da página HTML.'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 * * * *' # roda a cada hora (ajuste se quiser)
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write  # preciso de permissão para atualizar o arquivo de estado no repo
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run pets notifier
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_URL: ${{ github.event.inputs.target_url || '' }}
+          DATA_API_URL: ${{ github.event.inputs.data_api_url || '' }}
+        run: |
+          node .github/scripts/monitor-pets.js
